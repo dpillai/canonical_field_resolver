@@ -2,7 +2,7 @@ from shapely.geometry import Polygon
 from shapely.geometry import shape
 from uuid import uuid4
 from resolver.logger import logger
-import versioning
+from resolver import versioning
 
 canonical_fields = {}
 
@@ -28,10 +28,10 @@ def resolve_field_id(geojson_feature, season=None, source=None):
     id = find_best_match(new_poly)
     if id:
         #CReate the latest servion
-        versioning.add_new_version(new_poly, id, season, source) 
+        new_version = versioning.add_new_version(new_poly, id, season, source) 
         #Update the field to point to the latest version
         canonical_fields[id] = new_poly
-
+        logger.info(f"Field {id} updated to {new_version['version']}")
         return id
     else:
         new_id = str(uuid4())
