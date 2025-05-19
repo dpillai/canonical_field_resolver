@@ -2,6 +2,7 @@ from shapely.geometry import Polygon
 from shapely.geometry import shape
 from uuid import uuid4
 from resolver.logger import logger
+import versioning
 
 canonical_fields = {}
 
@@ -22,15 +23,20 @@ def find_best_match(new_poly: Polygon, threshold=0.9):
     logger.info(f"No Matches found")
     return None
 
-def resolve_field_id(geojson_feature):
+def resolve_field_id(geojson_feature, season=None, source=None):
     new_poly = polygon_from_geojson(geojson_feature)
     id = find_best_match(new_poly)
     if id:
+        #CReate the latest servion
+        versioning.add_new_version(new_poly, id, season, source) 
+        #Update the field to point to the latest version
+        canonical_fields[id] = new_poly
+
         return id
     else:
         new_id = str(uuid4())
         canonical_fields[new_id] = new_poly
+
+        versioning.add_new_version(new_poly, new_id, season, source) 
         logger.info(f"New field {new_id} added to the list")
         return new_id
-
- 

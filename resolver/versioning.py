@@ -2,27 +2,21 @@ from shapely.geometry import Polygon
 from shapely.geometry import shape
 from uuid import uuid4
 from resolver.logger import logger
-from resolver import matcher
 
-def polygon_from_geojson(geojson_feature):
-    """
-    Convert a GeoJSON feature to a Shapely Polygon.
-    """
-    return shape(geojson_feature['geometry'])
+field_versions = {}
 
-def add_new_version(geojson_feature, field_id, season, source=None):
-    """
-    Add a new version of a field to the canonical fields.
-    """
-    new_poly = matcher.polygon_from_geojson(geojson_feature)
-    
-    new_id = str(uuid4())
-    matcher.canonical_fields[new_id] = {
+def add_new_version(new_poly, canonical_id, season, source=None):
+ 
+    Current_versions = field_versions.get(canonical_id, [])
+    new_version_id = f"v{len(current_versions)+1}"
+
+    new_version = {
+        "version_id": new_version_id,
         "polygon": new_poly,
-        "version": matcher.canonical_fields[field_id] + 1,
-        "source": source,
-        "season": season
+        "season": season,
+        "source": source
     }
-    return new_id
 
-    
+    field_versions.setdefault(canonical_id,[]).append(new_version)
+
+    return new_version
