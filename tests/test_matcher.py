@@ -26,19 +26,19 @@ def test_iou():
 
 def test_resolve_poly_new():
     matcher.canonical_fields.clear()
-    field_id = matcher.resolve_field_id(simple_square())
+    field_id = matcher.resolve_field(simple_square())
     assert field_id in matcher.canonical_fields
 
 
 def test_resolve_poly_duplicate():
     matcher.canonical_fields.clear()
-    first_field_id = matcher.resolve_field_id(simple_square())
-    second_field_id = matcher.resolve_field_id(simple_square())
+    first_field_id = matcher.resolve_field(simple_square())
+    second_field_id = matcher.resolve_field(simple_square())
     assert first_field_id  == second_field_id
 
 def test_canonical_field_points_to_latest_version():
 
     matcher.canonical_fields.clear()
-    first_field_id = matcher.resolve_field_id(simple_square())
-    second_field_id = matcher.resolve_field_id(simple_square())
+    first_field_id = matcher.resolve_field(simple_square())
+    second_field_id = matcher.resolve_field(simple_square())
     assert first_field_id  == second_field_id
