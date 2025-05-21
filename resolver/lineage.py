@@ -15,7 +15,7 @@ def record_split(parent_id, children_ids, season, confidence ='High'):
     })
 
 def record_merge(from_ids, to_id, season, confidence='High'):
-    for from_id in from_from_ids:
+    for from_id in from_ids:
         if from_id not in lineage_data:
             lineage_data[from_id] = {}
         
