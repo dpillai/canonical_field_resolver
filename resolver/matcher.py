@@ -5,7 +5,7 @@ from resolver.logger import logger
 from resolver import versioning, lineage
 
 canonical_fields = {}
-field_status = {}
+field_status = {} # Maps canonical_id to status
 
 def polygon_from_geojson(geojson_feature):
     return shape(geojson_feature['geometry'])
@@ -34,6 +34,27 @@ def find_matches(new_poly: Polygon, iou_thresh=0.8, containment_thresh=0.9):
     return field_to_be_versioned, fields_to_be_merged
 
 def resolve_field(geojson_feature, season=None, source=None):
+
+    """
+    Resolves a GeoJSON field by either:
+    1. Creating a new field if no match is found
+    2. Updating an existing field if a high match is found
+    3. Creating a merged field if partial containment is found
+    
+    Merging process:
+    - When a new field has significant containment with existing fields
+    - A new canonical ID is created
+    - Original fields are marked as 'Deprecated'
+    - Lineage information is recorded
+    
+    Args:
+        geojson_feature: GeoJSON Feature with Polygon geometry
+        season: Optional season identifier
+        source: Optional source identifier
+        
+    Returns:
+        UUID of the resolved field
+    """
     new_poly = polygon_from_geojson(geojson_feature)
     
     if new_poly.area == 0 or not new_poly.is_valid:
@@ -75,5 +96,5 @@ def resolve_field(geojson_feature, season=None, source=None):
             field_status[field] = {
                 "status": "Deprecated",
                 "Reason": f"Meged into {new_id}"
-
+            }
         return new_id
