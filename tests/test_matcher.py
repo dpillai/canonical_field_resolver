@@ -1,6 +1,6 @@
 from shapely.geometry import Polygon
 from uuid import uuid4
-from resolver import matcher
+from resolver import matcher, lineage
 import pytest
 
 
@@ -20,6 +20,13 @@ def simple_square(index):
         "geometry": {
             "type": "Polygon",
             "coordinates": [[[0.8, 0], [0.8, 1], [1.8, 1], [1.8, 0], [0.8, 0]]]
+        }
+    },
+    {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[0, 0], [0, 1], [1.8, 1], [1.8, 0], [0, 0]]]
         }
     }]    
 
@@ -52,3 +59,56 @@ def test_canonical_field_points_to_latest_version():
     first_field_id = matcher.resolve_field(simple_square(0))
     second_field_id = matcher.resolve_field(simple_square(0))
     assert first_field_id  == second_field_id
+
+def test_basic_merge():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0))
+    field2_id = matcher.resolve_field(simple_square(1))
+    merge_field_id = matcher.resolve_field(simple_square(2))
+
+    assert merge_field_id != field1_id
+    assert merge_field_id != field2_id
+    assert merge_field_id in matcher.canonical_fields
+    assert matcher.canonical_fields[merge_field_id] == Polygon(simple_square(2)["geometry"]["coordinates"][0])
+
+def test_field_status_after_merge():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0))
+    field2_id = matcher.resolve_field(simple_square(1))
+    merge_field_id = matcher.resolve_field(simple_square(2))
+    
+    #Checking status is updated
+    assert matcher.field_status[field1_id]["Status"] == "Deprecated"
+    assert matcher.field_status[field2_id]["Status"] == "Deprecated"
+    assert matcher.field_status[merge_field_id]["Status"] == "Active"
+
+    #Checking Reason is updated
+    assert matcher.field_status[field1_id]["Reason"] == f"Merged into {merge_field_id}"
+    assert matcher.field_status[field2_id]["Reason"] == f"Merged into {merge_field_id}"
+
+    
+def test_lineage_after_merge():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0),"2024", "JD")
+    field2_id = matcher.resolve_field(simple_square(1), "2024", "NTN")
+    merge_field_id = matcher.resolve_field(simple_square(2), "2025", "Owner")
+    
+    
+    assert lineage.lineage_data[field1_id]["merged_into"][0]["all_sources"] == [field1_id, field2_id]
+    assert lineage.lineage_data[field1_id]["merged_into"][0]["target"] == merge_field_id
+    assert lineage.lineage_data[field2_id]["merged_into"][0]["all_sources"] == [field1_id, field2_id]
+    assert lineage.lineage_data[field2_id]["merged_into"][0]["target"] == merge_field_id
+
+    assert lineage.lineage_data[merge_field_id]["merged_from"][0]["sources"] == [field1_id, field2_id]

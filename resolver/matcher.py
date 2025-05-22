@@ -5,7 +5,7 @@ from resolver.logger import logger
 from resolver import versioning, lineage
 
 canonical_fields = {}
-field_status = {} # Maps canonical_id to status
+field_status = {} # Maps canonical_id to Status
 
 def polygon_from_geojson(geojson_feature):
     return shape(geojson_feature['geometry'])
@@ -71,7 +71,7 @@ def resolve_field(geojson_feature, season=None, source=None):
         logger.info(f"New field {new_id} added.")
 
         field_status[new_id] = {
-            "status": "Active",
+            "Status": "Active",
             "Reason": f"New field {new_id} added"
         }
         return new_id
@@ -91,10 +91,20 @@ def resolve_field(geojson_feature, season=None, source=None):
         versioning.add_new_version(new_poly, new_id, season, source)
         logger.info(f"New merged field {new_id} from {fields_to_be_merged}")
 
-        #Update status of old fields to Deprected post merge
+        # Make an entry in field_status for the new merged field
+        field_status[new_id] = {
+            "Status": "Active",
+            "Reason": f"New field {new_id} added"
+        }
+        #Update Status of old fields to Deprecated post merge
         for field in fields_to_be_merged:
             field_status[field] = {
-                "status": "Deprecated",
-                "Reason": f"Meged into {new_id}"
+                "Status": "Deprecated",
+                "Reason": f"Merged into {new_id}"
             }
         return new_id
+
+
+def get_field_status(field_id):
+    """Returns the status of a field or 'Active' if not explicitly set."""
+    return field_status.get(field_id, 'Active')

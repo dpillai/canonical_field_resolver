@@ -29,9 +29,9 @@ def test_record_split():
     assert parent_field in lineage.lineage_data
 
     assert lineage.lineage_data[parent_field]['splits'] == [{
-        "season": "2025",
-        "children": children_fields,
-        "confidence": "High"
+        "Season": "2025",
+        "Children": children_fields,
+        "Confidence": "High"
     }]
 
     new_child = uuid4()
