@@ -6,20 +6,20 @@ def record_split(parent_id, children_ids, season, confidence ='High'):
     if parent_id not in lineage_data:
         lineage_data[parent_id] = {}
     
-    splits = lineage_data[parent_id].setdefault("split into", [])
+    splits = lineage_data[parent_id].setdefault("split_into", [])
 
     splits.append({
-        "Season": season,
-        "Children": children_ids,
-        "Confidence": confidence
+        "season": season,
+        "children": children_ids,
+        "confidence": confidence
     })
 
     # Record for each source field
     for child_id in children_ids:
         if child_id not in lineage_data:
-            lineage_data[from_id] = {}
+            lineage_data[child_id] = {}
         
-        origins = lineage_data[from_id].setdefault("split from", [])
+        origins = lineage_data[child_id].setdefault("split_from", [])
         origins.append({
             "season": season,
             "source": parent_id,

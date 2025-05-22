@@ -28,7 +28,7 @@ def test_record_split():
 
     assert parent_field in lineage.lineage_data
 
-    assert lineage.lineage_data[parent_field]['splits'] == [{
+    assert lineage.lineage_data[parent_field]['split_into'] == [{
         "Season": "2025",
         "Children": children_fields,
         "Confidence": "High"
@@ -38,4 +38,4 @@ def test_record_split():
     #testing for new plsit being appeded
     lineage.record_split(parent_field, [new_child], "2025")
 
-    assert len(lineage.lineage_data[parent_field]['splits']) == 2
+    assert len(lineage.lineage_data[parent_field]['split_into']) == 2

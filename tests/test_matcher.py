@@ -28,6 +28,13 @@ def simple_square(index):
             "type": "Polygon",
             "coordinates": [[[0, 0], [0, 1], [1.8, 1], [1.8, 0], [0, 0]]]
         }
+    },
+       {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[0, 0], [0, 0.5], [0.5,0.5], [0.5, 0], [0, 0]]]
+        }
     }]    
 
     return polygon_store[int(index)]
@@ -112,3 +119,46 @@ def test_lineage_after_merge():
     assert lineage.lineage_data[field2_id]["merged_into"][0]["target"] == merge_field_id
 
     assert lineage.lineage_data[merge_field_id]["merged_from"][0]["sources"] == [field1_id, field2_id]
+
+
+def test_basic_split():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0))
+    subfield_id = matcher.resolve_field(simple_square(3))
+
+    assert subfield_id != field1_id
+    assert subfield_id in matcher.canonical_fields
+    assert matcher.canonical_fields[subfield_id] == Polygon(simple_square(3)["geometry"]["coordinates"][0])
+
+
+def test_field_status_after_split():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0))
+    subfield_id = matcher.resolve_field(simple_square(3))
+    
+    #Checking status is updated
+    assert matcher.field_status[field1_id]["Status"] == "Active"
+    assert matcher.field_status[subfield_id]["Status"] == "Active"
+
+    #Checking Reason is updated
+    assert matcher.field_status[subfield_id]["Reason"] == f"New field {subfield_id} split from {field1_id}"
+
+def test_lineage_after_split():
+
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
+
+    field1_id = matcher.resolve_field(simple_square(0))
+    subfield_id = matcher.resolve_field(simple_square(3))
+    
+    assert lineage.lineage_data[field1_id]["split_into"][0]["children"] == [subfield_id]
+    assert lineage.lineage_data[subfield_id]["split_from"][0]["source"] == [field1_id]

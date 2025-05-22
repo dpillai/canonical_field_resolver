@@ -4,6 +4,7 @@ from uuid import uuid4
 from resolver.logger import logger
 from resolver import versioning, lineage
 
+EPSILON = 1e-6
 canonical_fields = {}
 field_status = {} # Maps canonical_id to Status
 
@@ -18,6 +19,7 @@ def iou(poly1: Polygon, poly2: Polygon) -> float:
 def find_matches(new_poly: Polygon, iou_thresh=0.8, containment_thresh=0.9):
     field_to_be_versioned = []
     fields_to_be_merged = []
+    field_to_be_split = []
 
     for fid, can_poly in canonical_fields.items():
 
@@ -28,10 +30,12 @@ def find_matches(new_poly: Polygon, iou_thresh=0.8, containment_thresh=0.9):
 
         if iou_score >= iou_thresh:
             field_to_be_versioned.append(fid)
+        elif iou_score < 0.5 and abs(intersection_area - new_poly.area) < EPSILON:
+            field_to_be_split.append(fid)
         elif containment_old_in_new >= containment_thresh or containment_new_in_old >= containment_thresh:
             fields_to_be_merged.append(fid)
             
-    return field_to_be_versioned, fields_to_be_merged
+    return field_to_be_versioned, fields_to_be_merged, field_to_be_split
 
 def resolve_field(geojson_feature, season=None, source=None):
 
@@ -61,9 +65,9 @@ def resolve_field(geojson_feature, season=None, source=None):
         logger.warning("Rejected invalid or zero-area polygon.")
         return None
     
-    field_to_be_versioned, fields_to_be_merged = find_matches(new_poly)
+    field_to_be_versioned, fields_to_be_merged, field_to_be_split = find_matches(new_poly)
 
-    if not (field_to_be_versioned or fields_to_be_merged):
+    if not (field_to_be_versioned or fields_to_be_merged or field_to_be_split):
      
         new_id = str(uuid4())
         canonical_fields[new_id] = new_poly
@@ -83,6 +87,18 @@ def resolve_field(geojson_feature, season=None, source=None):
         logger.info(f"Field {fid} updated to version {new_version['version']}")
         return fid
 
+    elif field_to_be_split:
+        new_id = str(uuid4())
+        canonical_fields[new_id] = new_poly
+        versioning.add_new_version(new_poly, new_id, season, source)
+        logger.info(f"New field {new_id} added.")
+
+        field_status[new_id] = {
+            "Status": "Active",
+            "Reason": f"New field {new_id} split from {field_to_be_split[0]}"
+        }
+        lineage.record_split(field_to_be_split[0], new_id, season, source)
+        return new_id
     else:
         # Merge scenario
         new_id = str(uuid4())
