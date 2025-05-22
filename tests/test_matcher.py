@@ -3,9 +3,15 @@ from uuid import uuid4
 from resolver import matcher, lineage
 import pytest
 
+import pytest
+
+@pytest.fixture
+def clean_state():
+    matcher.canonical_fields.clear()
+    matcher.field_status.clear()
+    lineage.lineage_data.clear()
 
 def simple_square(index):
-
     
     polygon_store = [
         {
@@ -48,30 +54,23 @@ def test_iou():
     poly2 = Polygon(simple_square(0)["geometry"]["coordinates"][0])
     assert matcher.iou(poly1, poly2) == 1.0
 
-def test_resolve_poly_new():
-    matcher.canonical_fields.clear()
+def test_resolve_poly_new(clean_state):
     field_id = matcher.resolve_field(simple_square(0))
     assert field_id in matcher.canonical_fields
 
 
-def test_resolve_poly_duplicate():
-    matcher.canonical_fields.clear()
+def test_resolve_poly_duplicate(clean_state):
     first_field_id = matcher.resolve_field(simple_square(0))
     second_field_id = matcher.resolve_field(simple_square(0))
     assert first_field_id  == second_field_id
 
-def test_canonical_field_points_to_latest_version():
+def test_canonical_field_points_to_latest_version(clean_state):
 
-    matcher.canonical_fields.clear()
     first_field_id = matcher.resolve_field(simple_square(0))
     second_field_id = matcher.resolve_field(simple_square(0))
     assert first_field_id  == second_field_id
 
-def test_basic_merge():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_basic_merge(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0))
     field2_id = matcher.resolve_field(simple_square(1))
@@ -82,11 +81,7 @@ def test_basic_merge():
     assert merge_field_id in matcher.canonical_fields
     assert matcher.canonical_fields[merge_field_id] == Polygon(simple_square(2)["geometry"]["coordinates"][0])
 
-def test_field_status_after_merge():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_field_status_after_merge(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0))
     field2_id = matcher.resolve_field(simple_square(1))
@@ -102,11 +97,7 @@ def test_field_status_after_merge():
     assert matcher.field_status[field2_id]["Reason"] == f"Merged into {merge_field_id}"
 
     
-def test_lineage_after_merge():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_lineage_after_merge(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0),"2024", "JD")
     field2_id = matcher.resolve_field(simple_square(1), "2024", "NTN")
@@ -121,11 +112,7 @@ def test_lineage_after_merge():
     assert lineage.lineage_data[merge_field_id]["merged_from"][0]["sources"] == [field1_id, field2_id]
 
 
-def test_basic_split():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_basic_split(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0))
     subfield_id = matcher.resolve_field(simple_square(3))
@@ -135,11 +122,7 @@ def test_basic_split():
     assert matcher.canonical_fields[subfield_id] == Polygon(simple_square(3)["geometry"]["coordinates"][0])
 
 
-def test_field_status_after_split():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_field_status_after_split(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0))
     subfield_id = matcher.resolve_field(simple_square(3))
@@ -151,14 +134,10 @@ def test_field_status_after_split():
     #Checking Reason is updated
     assert matcher.field_status[subfield_id]["Reason"] == f"New field {subfield_id} split from {field1_id}"
 
-def test_lineage_after_split():
-
-    matcher.canonical_fields.clear()
-    matcher.field_status.clear()
-    lineage.lineage_data.clear()
+def test_lineage_after_split(clean_state):
 
     field1_id = matcher.resolve_field(simple_square(0))
-    subfield_id = matcher.resolve_field(simple_square(3))
+    subfield_id = matcher.resolve_field(simple_square(3), "2025", "John")
     
     assert lineage.lineage_data[field1_id]["split_into"][0]["children"] == [subfield_id]
-    assert lineage.lineage_data[subfield_id]["split_from"][0]["source"] == [field1_id]
+    assert lineage.lineage_data[subfield_id]["split_from"][0]["parent"] == field1_id

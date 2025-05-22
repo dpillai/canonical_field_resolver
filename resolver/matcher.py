@@ -97,7 +97,7 @@ def resolve_field(geojson_feature, season=None, source=None):
             "Status": "Active",
             "Reason": f"New field {new_id} split from {field_to_be_split[0]}"
         }
-        lineage.record_split(field_to_be_split[0], new_id, season, source)
+        lineage.record_split(field_to_be_split[0], [new_id], season, source)
         return new_id
     else:
         # Merge scenario

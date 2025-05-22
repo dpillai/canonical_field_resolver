@@ -2,7 +2,7 @@
 lineage_data = {}
 
 
-def record_split(parent_id, children_ids, season, confidence ='High'):
+def record_split(parent_id, children_ids, season=None, source=None, confidence ='High'):
     if parent_id not in lineage_data:
         lineage_data[parent_id] = {}
     
@@ -10,6 +10,7 @@ def record_split(parent_id, children_ids, season, confidence ='High'):
 
     splits.append({
         "season": season,
+        "source": source,
         "children": children_ids,
         "confidence": confidence
     })
@@ -22,12 +23,13 @@ def record_split(parent_id, children_ids, season, confidence ='High'):
         origins = lineage_data[child_id].setdefault("split_from", [])
         origins.append({
             "season": season,
-            "source": parent_id,
-            "all_targets": children_ids,  # Full context
+            "source": source,
+            "parent": parent_id,
+            "all_children": children_ids,  # Full context
             "confidence": confidence
         })
 
-def record_merge(from_ids, to_id, season, confidence='High'):
+def record_merge(from_ids, to_id, season=None, source=None, confidence='High'):
     # Record for each source field
     for from_id in from_ids:
         if from_id not in lineage_data:
@@ -36,6 +38,7 @@ def record_merge(from_ids, to_id, season, confidence='High'):
         merges = lineage_data[from_id].setdefault("merged_into", [])
         merges.append({
             "season": season,
+            "source": source,
             "target": to_id,
             "all_sources": from_ids,  # Full context
             "confidence": confidence
@@ -48,6 +51,7 @@ def record_merge(from_ids, to_id, season, confidence='High'):
     origins = lineage_data[to_id].setdefault("merged_from", [])
     origins.append({
         "season": season,
+        "source": source,
         "sources": from_ids,
         "confidence": confidence
     })
